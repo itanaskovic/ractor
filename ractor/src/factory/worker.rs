@@ -5,7 +5,8 @@
 
 //! Factory worker properties
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
+use std::collections::VecDeque;
 use std::fmt::Debug;
 #[cfg(not(feature = "async-trait"))]
 use std::future::Future;
@@ -14,17 +15,27 @@ use std::sync::Arc;
 use bon::Builder;
 use tracing::Instrument;
 
-use crate::concurrency::{Duration, Instant, JoinHandle};
-use crate::{Actor, ActorId, ActorProcessingErr};
-use crate::{ActorCell, ActorRef, Message, MessagingErr, SupervisionEvent};
-
-use super::discard::{DiscardMode, WorkerDiscardSettings};
+use super::discard::DiscardMode;
+use super::discard::WorkerDiscardSettings;
 use super::stats::FactoryStatsLayer;
+use super::DiscardHandler;
+use super::DiscardReason;
 use super::FactoryMessage;
 use super::Job;
 use super::JobKey;
+use super::JobOptions;
 use super::WorkerId;
-use super::{DiscardHandler, DiscardReason, JobOptions};
+use crate::concurrency::Duration;
+use crate::concurrency::Instant;
+use crate::concurrency::JoinHandle;
+use crate::Actor;
+use crate::ActorCell;
+use crate::ActorId;
+use crate::ActorProcessingErr;
+use crate::ActorRef;
+use crate::Message;
+use crate::MessagingErr;
+use crate::SupervisionEvent;
 
 /// The configuration for the dead-man's switch functionality
 #[derive(Builder, Debug)]
@@ -614,12 +625,12 @@ where
 
     /// Identify if the worker is available for enqueueing work
     pub fn is_available(&self) -> bool {
-        self.curr_jobs.is_empty()
+        self.curr_jobs.is_empty() && self.message_queue.is_empty()
     }
 
     /// Identify if the worker is currently processing any requests
     pub fn is_working(&self) -> bool {
-        !self.curr_jobs.is_empty()
+        !self.is_available()
     }
 
     /// Denotes if the worker is stuck (i.e. unable to complete it's current job)
@@ -643,7 +654,7 @@ where
     pub fn enqueue_job(
         &mut self,
         mut job: Job<TKey, TMsg>,
-    ) -> Result<(), MessagingErr<WorkerMessage<TKey, TMsg>>> {
+    ) -> Result<(), Box<MessagingErr<WorkerMessage<TKey, TMsg>>>> {
         // track per-job statistics
         self.stats.new_job(&self.factory_name);
 
@@ -692,10 +703,12 @@ where
     /// Send a ping to the worker
     pub(crate) fn send_factory_ping(
         &mut self,
-    ) -> Result<(), MessagingErr<WorkerMessage<TKey, TMsg>>> {
+    ) -> Result<(), Box<MessagingErr<WorkerMessage<TKey, TMsg>>>> {
         if !self.is_ping_pending {
             self.is_ping_pending = true;
-            self.actor.cast(WorkerMessage::FactoryPing(Instant::now()))
+            Ok(self
+                .actor
+                .cast(WorkerMessage::FactoryPing(Instant::now()))?)
         } else {
             // don't send a new ping if one is currently pending
             Ok(())
@@ -714,11 +727,12 @@ where
     pub(crate) fn worker_complete(
         &mut self,
         key: TKey,
-    ) -> Result<Option<JobOptions>, MessagingErr<WorkerMessage<TKey, TMsg>>> {
+    ) -> Result<Option<JobOptions>, Box<MessagingErr<WorkerMessage<TKey, TMsg>>>> {
         // remove this pending job
         let options = self.curr_jobs.remove(&key);
         // maybe queue up the next job
         if let Some(mut job) = self.get_next_non_expired_job() {
+            self.curr_jobs.insert(job.key.clone(), job.options.clone());
             job.set_worker_time();
             self.actor.cast(WorkerMessage::Dispatch(job))?;
         }

@@ -7,8 +7,10 @@
 
 use std::fmt::Display;
 
-use ractor::{ActorRef, MessagingErr};
-use tokio::net::{TcpStream, ToSocketAddrs};
+use ractor::ActorRef;
+use ractor::MessagingErr;
+use tokio::net::TcpStream;
+use tokio::net::ToSocketAddrs;
 use tokio_rustls::rustls::pki_types::ServerName;
 
 /// A client connection error. Possible issues are Socket connection
@@ -74,11 +76,11 @@ where
     let local = stream.local_addr()?;
 
     node_server.cast(super::NodeServerMessage::ConnectionOpened {
-        stream: crate::net::NetworkStream::Raw {
+        stream: Box::new(crate::net::NetworkStream::Raw {
             stream,
             peer_addr: addr,
             local_addr: local,
-        },
+        }),
         is_server: false,
     })?;
 
@@ -117,11 +119,11 @@ where
         .map_err(ClientConnectErr::Encryption)?;
 
     node_server.cast(super::NodeServerMessage::ConnectionOpened {
-        stream: crate::net::NetworkStream::TlsClient {
+        stream: Box::new(crate::net::NetworkStream::TlsClient {
             stream: enc_stream,
             peer_addr: addr,
             local_addr: local,
-        },
+        }),
         is_server: false,
     })?;
 

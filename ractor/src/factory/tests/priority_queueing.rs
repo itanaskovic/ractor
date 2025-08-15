@@ -7,15 +7,15 @@ use std::sync::atomic::AtomicU16;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
-use crate::Actor;
-use crate::ActorProcessingErr;
-use crate::ActorRef;
 use tokio::sync::Notify;
 
 use crate::factory::queues::Priority;
 use crate::factory::queues::PriorityManager;
 use crate::factory::queues::StandardPriority;
 use crate::factory::*;
+use crate::Actor;
+use crate::ActorProcessingErr;
+use crate::ActorRef;
 
 type TestKey = StandardPriority;
 
@@ -116,7 +116,10 @@ impl WorkerBuilder<TestWorker, ()> for TestWorkerBuilder {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_basic_priority_queueing() {
     // Setup
     // a counter for each priority

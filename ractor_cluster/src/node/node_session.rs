@@ -7,26 +7,36 @@
 //! `node()`s and all of its authentication and communication for that
 //! pairing
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
+use std::collections::HashSet;
 use std::convert::TryInto;
 use std::net::SocketAddr;
-use std::time::{Instant, SystemTime};
+use std::time::Instant;
+use std::time::SystemTime;
 
 use ractor::message::SerializedMessage;
-use ractor::pg::{get_scoped_local_members, which_scopes_and_groups, GroupChangeMessage};
+use ractor::pg::get_scoped_local_members;
+use ractor::pg::which_scopes_and_groups;
+use ractor::pg::GroupChangeMessage;
 use ractor::registry::PidLifecycleEvent;
 use ractor::rpc::CallResult;
-use ractor::{Actor, ActorId, ActorProcessingErr, ActorRef, SpawnErr, SupervisionEvent};
+use ractor::Actor;
+use ractor::ActorId;
+use ractor::ActorProcessingErr;
+use ractor::ActorRef;
+use ractor::SpawnErr;
+use ractor::SupervisionEvent;
 use rand::Rng;
 use tokio::time::Duration;
 
 use super::auth;
-use crate::net::session::SessionMessage;
+use crate::net::SessionMessage;
 use crate::node::NodeConnectionMode;
 use crate::protocol::auth as auth_protocol;
 use crate::protocol::control as control_protocol;
 use crate::protocol::node as node_protocol;
-use crate::remote_actor::{RemoteActor, RemoteActorMessage};
+use crate::remote_actor::RemoteActor;
+use crate::remote_actor::RemoteActorMessage;
 use crate::NodeServerMessage;
 
 const MIN_PING_LATENCY_MS: u64 = 1000;
@@ -92,6 +102,7 @@ impl ReadyState {
 ///
 /// Lastly the node's have an intern-node "ping" operation which occurs to keep the TCP session alive
 /// and additionally measure peer latency.
+#[derive(Debug)]
 pub struct NodeSession {
     node_id: crate::NodeId,
     is_server: bool,
@@ -793,8 +804,9 @@ impl NodeSession {
 }
 
 /// The state of the node session
+#[derive(Debug)]
 pub struct NodeSessionState {
-    tcp: Option<ActorRef<crate::net::session::SessionMessage>>,
+    tcp: Option<ActorRef<SessionMessage>>,
     peer_addr: SocketAddr,
     local_addr: SocketAddr,
     epoch: Instant,
@@ -886,7 +898,7 @@ impl Actor for NodeSession {
         let peer_addr = stream.peer_addr();
         let local_addr = stream.local_addr();
         // startup the TCP socket handler for message write + reading
-        let actor = crate::net::session::Session::spawn_linked(
+        let actor = crate::net::Session::spawn_linked(
             myself.clone(),
             stream,
             peer_addr,

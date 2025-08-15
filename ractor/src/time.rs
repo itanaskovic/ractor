@@ -18,7 +18,9 @@
 //!
 //! ```rust
 //! use ractor::concurrency::Duration;
-//! use ractor::{Actor, ActorProcessingErr, ActorRef};
+//! use ractor::Actor;
+//! use ractor::ActorProcessingErr;
+//! use ractor::ActorRef;
 //!
 //! struct ExampleActor;
 //!
@@ -83,9 +85,12 @@
 //! }
 //! ```
 
-use crate::concurrency::{Duration, JoinHandle};
-
-use crate::{ActorCell, Message, MessagingErr, ACTIVE_STATES};
+use crate::concurrency::Duration;
+use crate::concurrency::JoinHandle;
+use crate::ActorCell;
+use crate::Message;
+use crate::MessagingErr;
+use crate::ACTIVE_STATES;
 
 #[cfg(test)]
 mod tests;
@@ -227,7 +232,22 @@ where
     where
         F: Fn() -> TMessage + Send + 'static,
     {
-        send_interval::<TMessage, F>(period, self.get_cell(), msg)
+        // IMPORTANT: See notes on `send_interval` above for important implementation
+        // notes
+        let self_clone = self.clone();
+        crate::concurrency::spawn(async move {
+            let mut timer = crate::concurrency::interval(period);
+            // timer tick's immediately the first time
+            timer.tick().await;
+            while ACTIVE_STATES.contains(&self_clone.get_status()) {
+                timer.tick().await;
+                // if we receive an error trying to send, the channel is closed and we should stop trying
+                // actor died
+                if self_clone.send_message(msg()).is_err() {
+                    break;
+                }
+            }
+        })
     }
 
     /// Alias of [send_after]
@@ -239,7 +259,12 @@ where
     where
         F: FnOnce() -> TMessage + Send + 'static,
     {
-        send_after::<TMessage, F>(period, self.get_cell(), msg)
+        let self_clone = self.clone();
+        crate::concurrency::spawn(async move {
+            crate::concurrency::sleep(period).await;
+            let msg = msg();
+            self_clone.send_message(msg)
+        })
     }
 
     /// Alias of [exit_after]

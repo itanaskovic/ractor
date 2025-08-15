@@ -7,9 +7,11 @@
 
 use std::marker::PhantomData;
 
-use crate::{ActorName, Message, MessagingErr, SupervisionEvent};
-
 use super::ActorCell;
+use crate::ActorName;
+use crate::Message;
+use crate::MessagingErr;
+use crate::SupervisionEvent;
 
 /// An [ActorRef] is a strongly-typed wrapper over an [ActorCell]
 /// to provide some syntactic wrapping on the requirement to pass
@@ -57,6 +59,20 @@ impl<TActor> From<ActorRef<TActor>> for ActorCell {
 impl<TMessage> std::fmt::Debug for ActorRef<TMessage> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.inner.fmt(f)
+    }
+}
+
+impl<TMessage> PartialEq for ActorRef<TMessage> {
+    fn eq(&self, other: &Self) -> bool {
+        self.inner == other.inner
+    }
+}
+
+impl<TMessage> Eq for ActorRef<TMessage> {}
+
+impl<TMessage> std::hash::Hash for ActorRef<TMessage> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.inner.hash(state);
     }
 }
 

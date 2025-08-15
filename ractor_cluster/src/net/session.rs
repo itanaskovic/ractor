@@ -12,11 +12,18 @@ use std::net::SocketAddr;
 
 use bytes::Bytes;
 use prost::Message;
-use ractor::{Actor, ActorCell, ActorProcessingErr, ActorRef};
-use ractor::{SpawnErr, SupervisionEvent};
+use ractor::Actor;
+use ractor::ActorCell;
+use ractor::ActorProcessingErr;
+use ractor::ActorRef;
+use ractor::SpawnErr;
+use ractor::SupervisionEvent;
+use tokio::io::AsyncReadExt;
 use tokio::io::ErrorKind;
-use tokio::io::{AsyncReadExt, ReadHalf, WriteHalf};
-use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
+use tokio::io::ReadHalf;
+use tokio::io::WriteHalf;
+use tokio::net::tcp::OwnedReadHalf;
+use tokio::net::tcp::OwnedWriteHalf;
 use tokio::net::TcpStream;
 
 use crate::RactorMessage;
@@ -54,7 +61,7 @@ async fn read_n_bytes(stream: &mut ActorReadHalf, len: usize) -> Result<Vec<u8>,
 ///
 /// The [Session] actor supervises two child actors, [SessionReader] and [SessionWriter]. Should
 /// either the reader or writer exit, they will terminate the entire session.
-pub struct Session {
+pub(crate) struct Session {
     pub(crate) handler: ActorRef<crate::node::NodeSessionMessage>,
     pub(crate) peer_addr: SocketAddr,
     pub(crate) local_addr: SocketAddr,
@@ -94,7 +101,7 @@ impl Session {
 
 /// The node connection messages
 #[derive(RactorMessage)]
-pub enum SessionMessage {
+pub(crate) enum SessionMessage {
     /// Send a message over the channel
     Send(crate::protocol::NetworkMessage),
 
@@ -103,7 +110,7 @@ pub enum SessionMessage {
 }
 
 /// The node session's state
-pub struct SessionState {
+pub(crate) struct SessionState {
     writer: ActorRef<SessionWriterMessage>,
     reader: ActorRef<SessionReaderMessage>,
 }
@@ -362,7 +369,7 @@ struct SessionReader {
 }
 
 /// The node connection messages
-pub enum SessionReaderMessage {
+pub(crate) enum SessionReaderMessage {
     /// Wait for an object from the stream
     WaitForObject,
 

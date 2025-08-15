@@ -7,15 +7,19 @@
 
 use std::time::Duration;
 
-use crate::{concurrency::timeout, ActorProcessingErr};
 use futures::future::join_all;
 
-use crate::{Actor, ActorRef};
-
 use super::*;
+use crate::concurrency::timeout;
+use crate::Actor;
+use crate::ActorProcessingErr;
+use crate::ActorRef;
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_single_forward() {
     struct TestActor;
     enum TestActorMessage {
@@ -79,7 +83,10 @@ async fn test_single_forward() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_50_receivers() {
     struct TestActor;
     enum TestActorMessage {
@@ -159,7 +166,10 @@ async fn test_50_receivers() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_delivery() {
     struct TestActor;
     enum TestActorMessage {
@@ -240,7 +250,11 @@ use output_port_subscriber_tests::*;
 
 mod output_port_subscriber_tests {
     use super::*;
-    use crate::{call_t, cast, Actor, ActorRef, RpcReplyPort};
+    use crate::call_t;
+    use crate::cast;
+    use crate::Actor;
+    use crate::ActorRef;
+    use crate::RpcReplyPort;
 
     enum NumberPublisherMessage {
         Publish(u8),
@@ -395,7 +409,10 @@ mod output_port_subscriber_tests {
     }
 
     #[crate::concurrency::test]
-    #[tracing_test::traced_test]
+    #[cfg_attr(
+        not(all(target_arch = "wasm32", target_os = "unknown")),
+        tracing_test::traced_test
+    )]
     async fn test_output_port_subscriber() {
         let (number_publisher_ref, number_publisher_handler) =
             Actor::spawn(None, NumberPublisher, ()).await.unwrap();

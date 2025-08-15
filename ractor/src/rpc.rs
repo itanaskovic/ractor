@@ -13,9 +13,14 @@
 //! ## Examples
 //!
 //! ```rust
+//! use ractor::call;
+//! use ractor::call_t;
+//! use ractor::cast;
 //! use ractor::concurrency::Duration;
-//! use ractor::{call, call_t, cast};
-//! use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort};
+//! use ractor::Actor;
+//! use ractor::ActorProcessingErr;
+//! use ractor::ActorRef;
+//! use ractor::RpcReplyPort;
 //!
 //! struct ExampleActor;
 //!
@@ -87,9 +92,15 @@
 //! }
 //! ```
 
-use crate::concurrency::{self, Duration, JoinHandle};
-
-use crate::{ActorCell, ActorRef, DerivedActorRef, Message, MessagingErr, RpcReplyPort};
+use crate::concurrency::Duration;
+use crate::concurrency::JoinHandle;
+use crate::concurrency::{self};
+use crate::ActorCell;
+use crate::ActorRef;
+use crate::DerivedActorRef;
+use crate::Message;
+use crate::MessagingErr;
+use crate::RpcReplyPort;
 
 pub mod call_result;
 pub use call_result::CallResult;
@@ -104,36 +115,40 @@ where
     sender(msg)
 }
 
-async fn internal_call<F, TMessage, TReply, TMsgBuilder>(
+fn internal_call<F, TMessage, TReply, TMsgBuilder>(
     sender: F,
     msg_builder: TMsgBuilder,
     timeout_option: Option<Duration>,
-) -> Result<CallResult<TReply>, MessagingErr<TMessage>>
+) -> impl std::future::Future<Output = Result<CallResult<TReply>, MessagingErr<TMessage>>> + Send
 where
     F: Fn(TMessage) -> Result<(), MessagingErr<TMessage>>,
     TMessage: Message,
     TMsgBuilder: FnOnce(RpcReplyPort<TReply>) -> TMessage,
+    TReply: Send + 'static,
 {
     let (tx, rx) = concurrency::oneshot();
     let port: RpcReplyPort<TReply> = match timeout_option {
         Some(duration) => (tx, duration).into(),
         None => tx.into(),
     };
-    sender(msg_builder(port))?;
+    let sent = sender(msg_builder(port));
 
     // wait for the reply
-    Ok(if let Some(duration) = timeout_option {
-        match crate::concurrency::timeout(duration, rx).await {
-            Ok(Ok(result)) => CallResult::Success(result),
-            Ok(Err(_send_err)) => CallResult::SenderError,
-            Err(_timeout_err) => CallResult::Timeout,
-        }
-    } else {
-        match rx.await {
-            Ok(result) => CallResult::Success(result),
-            Err(_send_err) => CallResult::SenderError,
-        }
-    })
+    async move {
+        sent?;
+        Ok(if let Some(duration) = timeout_option {
+            match crate::concurrency::timeout(duration, rx).await {
+                Ok(Ok(result)) => CallResult::Success(result),
+                Ok(Err(_send_err)) => CallResult::SenderError,
+                Err(_timeout_err) => CallResult::Timeout,
+            }
+        } else {
+            match rx.await {
+                Ok(result) => CallResult::Success(result),
+                Err(_send_err) => CallResult::SenderError,
+            }
+        })
+    }
 }
 
 /// Sends an asynchronous request to the specified actor, ignoring if the
@@ -168,6 +183,7 @@ pub async fn call<TMessage, TReply, TMsgBuilder>(
 where
     TMessage: Message,
     TMsgBuilder: FnOnce(RpcReplyPort<TReply>) -> TMessage,
+    TReply: Send + 'static,
 {
     internal_call(|m| actor.send_message(m), msg_builder, timeout_option).await
 }
@@ -317,6 +333,7 @@ where
     ) -> Result<CallResult<TReply>, MessagingErr<TMessage>>
     where
         TMsgBuilder: FnOnce(RpcReplyPort<TReply>) -> TMessage,
+        TReply: Send + 'static,
     {
         call::<TMessage, TReply, TMsgBuilder>(&self.inner, msg_builder, timeout_option).await
     }
@@ -366,6 +383,7 @@ where
     ) -> Result<CallResult<TReply>, MessagingErr<TMessage>>
     where
         TMsgBuilder: FnOnce(RpcReplyPort<TReply>) -> TMessage,
+        TReply: Send + 'static,
     {
         internal_call(|m| self.send_message(m), msg_builder, timeout_option).await
     }

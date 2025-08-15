@@ -9,14 +9,15 @@
 use std::sync::Arc;
 
 #[cfg(not(feature = "async-trait"))]
-use futures::{future::BoxFuture, FutureExt};
+use futures::future::BoxFuture;
+#[cfg(not(feature = "async-trait"))]
+use futures::FutureExt;
 
 use crate::concurrency::Duration;
+use crate::factory::*;
 use crate::Actor;
 use crate::ActorProcessingErr;
 use crate::ActorRef;
-
-use crate::factory::*;
 
 #[derive(Debug, Hash, Clone, Eq, PartialEq)]
 struct TestKey {
@@ -93,7 +94,10 @@ impl WorkerBuilder<TestWorker, ()> for TestWorkerBuilder {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_worker_pool_adjustment_manual() {
     // Setup
 
@@ -184,7 +188,10 @@ async fn test_worker_pool_adjustment_manual() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_worker_pool_adjustment_automatic() {
     // Setup
 

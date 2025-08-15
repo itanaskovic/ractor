@@ -16,19 +16,26 @@
 //!
 //! 1. Non-serializable macros are simply getting `impl ractor::Message for MyStructOrEnum` added onto their struct
 //! 2. Serializable messages have to have a few formatting requirements.
-//!     a. All variants of the enum will be numbered based on their lexicographical ordering, which is sent over-the-wire in order to decode which
-//!        variant was called. This is the `index` field on any variant of `ractor::message::SerializedMessage`
-//!     b. All properties of the message **MUST** implement the `ractor::BytesConvertable` trait which means they supply a `to_bytes` and `from_bytes` method. Many
-//!        types are pre-done for you in `ractor`'s definition of the trait
-//!     c. For RPCs, the LAST argument **must** be the reply channel. Additionally the type of message the channel is expecting back must also implement `ractor::BytesConvertable`
-//!     d. Lastly, for RPCs, they should additionally be decorated with `#[rpc]` on each variant's definition. This helps the macro identify that it
-//!        is an RPC and will need port handler
-//!
+//!    a. All variants of the enum will be numbered based on their lexicographical ordering, which is sent over-the-wire in order to decode which
+//!    variant was called. This is the `index` field on any variant of `ractor::message::SerializedMessage`
+//!    b. All properties of the message **MUST** implement the `ractor::BytesConvertable` trait which means they supply a `to_bytes` and `from_bytes` method. Many
+//!    types are pre-done for you in `ractor`'s definition of the trait
+//!    c. For RPCs, the LAST argument **must** be the reply channel. Additionally the type of message the channel is expecting back must also implement `ractor::BytesConvertable`
+//!    d. Lastly, for RPCs, they should additionally be decorated with `#[rpc]` on each variant's definition. This helps the macro identify that it
+//!    is an RPC and will need port handler
 
 extern crate proc_macro;
 use proc_macro::TokenStream;
-use quote::{format_ident, quote, ToTokens};
-use syn::{self, AngleBracketedGenericArguments, DeriveInput, Fields, Ident, TypePath, Variant};
+use quote::format_ident;
+use quote::quote;
+use quote::ToTokens;
+use syn::AngleBracketedGenericArguments;
+use syn::DeriveInput;
+use syn::Fields;
+use syn::Ident;
+use syn::TypePath;
+use syn::Variant;
+use syn::{self};
 
 /// Derive `ractor::Message` for messages that are local-only
 #[proc_macro_derive(RactorMessage)]
@@ -54,7 +61,6 @@ pub fn ractor_message_derive_macro(input: TokenStream) -> TokenStream {
 /// 4. Lastly, for RPCs, they should additionally be decorated with `#[rpc]` on each variant's definition. This helps the macro identify that it
 ///    is an RPC and will need port handler
 /// 5. For backwards compatibility, you can add new variants as long as you don't rename variants until all nodes in the cluster are upgraded.
-///
 #[proc_macro_derive(RactorClusterMessage, attributes(rpc))]
 pub fn ractor_cluster_message_derive_macro(input: TokenStream) -> TokenStream {
     // Construct a representation of Rust code as a syntax tree

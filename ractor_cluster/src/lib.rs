@@ -41,12 +41,21 @@
 //! serialization is handled. There however is a procedural macro in `ractor_cluster_derive` to facilitate this, which is
 //! re-exposed on this crate under the same naming. Simply derive [RactorMessage] or [RactorClusterMessage] if you want local or
 //! remote-supporting messages, respectively.
-//!
 
-#![warn(unused_imports)]
-#![warn(unsafe_code)]
-#![warn(missing_docs)]
-#![warn(unused_crate_dependencies)]
+#![warn(
+    dead_code,
+    missing_debug_implementations,
+    missing_docs,
+    rust_2018_idioms,
+    rustdoc::all,
+    rustdoc::missing_crate_level_docs,
+    unreachable_pub,
+    unused_imports,
+    unused_variables,
+    unused_crate_dependencies,
+    clippy::mod_module_files,
+    unsafe_code
+)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 mod hash;
@@ -63,18 +72,17 @@ pub type NodeId = u64;
 // Satisfy dependencies transitively imported
 #[cfg(feature = "async-trait")]
 use async_trait as _;
-
 // ============== Re-exports ============== //
 pub use net::{IncomingEncryptionMode, NetworkStream};
 pub use node::client::connect as client_connect;
 pub use node::client::connect_enc as client_connect_enc;
-pub use node::{
-    client::ClientConnectErr, NodeEventSubscription, NodeServer, NodeServerMessage, NodeSession,
-    NodeSessionMessage,
-};
-
+pub use node::client::ClientConnectErr;
+pub use node::NodeEventSubscription;
+pub use node::NodeServer;
+pub use node::NodeServerMessage;
+pub use node::NodeSession;
+pub use node::NodeSessionMessage;
+pub use ractor::serialization::*;
 // Re-export the procedural macros so people don't need to reference them directly
 pub use ractor_cluster_derive::RactorClusterMessage;
 pub use ractor_cluster_derive::RactorMessage;
-
-pub use ractor::serialization::*;

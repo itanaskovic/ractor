@@ -13,8 +13,11 @@
 
 #![allow(clippy::incompatible_msrv)]
 
-use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort, SupervisionEvent};
-
+use ractor::Actor;
+use ractor::ActorProcessingErr;
+use ractor::ActorRef;
+use ractor::RpcReplyPort;
+use ractor::SupervisionEvent;
 use tokio::time::Duration;
 
 // ============================== Main ============================== //
@@ -24,6 +27,7 @@ fn init_logging() {
 
     use std::io::stderr;
     use std::io::IsTerminal;
+
     use tracing_glog::Glog;
     use tracing_glog::GlogFields;
     use tracing_subscriber::filter::EnvFilter;
@@ -46,7 +50,7 @@ fn init_logging() {
     tracing::subscriber::set_global_default(subscriber).expect("to set global subscriber");
 }
 
-#[tokio::main]
+#[ractor_example_entry_proc::ractor_example_entry]
 async fn main() {
     init_logging();
 
@@ -215,8 +219,7 @@ impl Actor for MidLevelActor {
                 tracing::info!("MidLevelActor: {dead_actor:?} panicked with '{panic_msg}'");
 
                 panic!(
-                    "MidLevelActor: Mid-level actor panicking because Leaf actor panicked with '{}'",
-                    panic_msg
+                    "MidLevelActor: Mid-level actor panicking because Leaf actor panicked with '{panic_msg}'"
                 );
             }
             other => {

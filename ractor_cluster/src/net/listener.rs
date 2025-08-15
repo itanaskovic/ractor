@@ -5,8 +5,10 @@
 
 //! TCP Server to accept incoming sessions
 
-use ractor::{cast, ActorProcessingErr};
-use ractor::{Actor, ActorRef};
+use ractor::cast;
+use ractor::Actor;
+use ractor::ActorProcessingErr;
+use ractor::ActorRef;
 use tokio::net::TcpListener;
 
 use super::IncomingEncryptionMode;
@@ -17,7 +19,7 @@ use crate::node::NodeServerMessage;
 ///
 /// The [Listener] supervises all of the TCP [super::session::Session] actors and is responsible for logging
 /// connects and disconnects as well as tracking the current open [super::session::Session] actors.
-pub struct Listener {
+pub(crate) struct Listener {
     port: super::NetworkPort,
     session_manager: ActorRef<crate::node::NodeServerMessage>,
     encryption: IncomingEncryptionMode,
@@ -25,7 +27,7 @@ pub struct Listener {
 
 impl Listener {
     /// Create a new `Listener`
-    pub fn new(
+    pub(crate) fn new(
         port: super::NetworkPort,
         session_manager: ActorRef<crate::node::NodeServerMessage>,
         encryption: IncomingEncryptionMode,
@@ -39,12 +41,12 @@ impl Listener {
 }
 
 /// The Node listener's state
-pub struct ListenerState {
+pub(crate) struct ListenerState {
     listener: Option<TcpListener>,
 }
 
 #[derive(crate::RactorMessage)]
-pub struct ListenerMessage;
+pub(crate) struct ListenerMessage;
 
 #[cfg_attr(feature = "async-trait", ractor::async_trait)]
 impl Actor for Listener {
@@ -131,7 +133,7 @@ impl Actor for Listener {
                         let _ = cast!(
                             self.session_manager,
                             NodeServerMessage::ConnectionOpened {
-                                stream,
+                                stream: Box::new(stream),
                                 is_server: true
                             }
                         );

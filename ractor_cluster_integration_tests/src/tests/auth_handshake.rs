@@ -7,8 +7,9 @@
 //! with the secret cookie challenge scheme
 
 use clap::Args;
-
-use ractor::concurrency::{sleep, Duration, Instant};
+use ractor::concurrency::sleep;
+use ractor::concurrency::Duration;
+use ractor::concurrency::Instant;
 use ractor::Actor;
 
 const AUTH_TIME_ALLOWANCE_MS: u128 = 1500;
@@ -24,6 +25,7 @@ pub struct AuthHandshakeConfig {
     client_host: Option<String>,
 }
 
+#[derive(Debug)]
 struct SubscriptionEventLogger;
 
 impl ractor_cluster::NodeEventSubscription for SubscriptionEventLogger {

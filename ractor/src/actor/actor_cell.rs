@@ -16,16 +16,23 @@ use std::sync::Arc;
 use futures::FutureExt;
 
 use super::actor_properties::MuxedMessage;
-use super::messages::{Signal, StopMessage};
+use super::messages::Signal;
+use super::messages::StopMessage;
 use super::SupervisionEvent;
 use crate::actor::actor_properties::ActorProperties;
-use crate::concurrency::{JoinHandle, MpscUnboundedReceiver as InputPortReceiver, OneshotReceiver};
+use crate::concurrency::JoinHandle;
+use crate::concurrency::MpscUnboundedReceiver as InputPortReceiver;
+use crate::concurrency::OneshotReceiver;
 use crate::errors::MessagingErr;
 #[cfg(feature = "cluster")]
 use crate::message::SerializedMessage;
-use crate::{Actor, ActorName, SpawnErr};
-use crate::{ActorId, Message};
-use crate::{ActorRef, RactorErr};
+use crate::Actor;
+use crate::ActorId;
+use crate::ActorName;
+use crate::ActorRef;
+use crate::Message;
+use crate::RactorErr;
+use crate::SpawnErr;
 
 /// [ActorStatus] represents the status of an actor's lifecycle
 #[derive(Debug, Clone, Eq, PartialEq, Copy, PartialOrd, Ord)]
@@ -196,7 +203,7 @@ impl ActorPortSet {
 /// underlying actor have terminated and no longer exist.
 #[derive(Clone)]
 pub struct ActorCell {
-    inner: Arc<ActorProperties>,
+    pub(crate) inner: Arc<ActorProperties>,
 }
 
 impl std::fmt::Debug for ActorCell {
@@ -554,7 +561,7 @@ impl ActorCell {
     pub fn send_serialized(
         &self,
         message: SerializedMessage,
-    ) -> Result<(), MessagingErr<SerializedMessage>> {
+    ) -> Result<(), Box<MessagingErr<SerializedMessage>>> {
         self.inner.send_serialized(message)
     }
 

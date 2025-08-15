@@ -5,7 +5,7 @@
 
 //! A clone of the [super::auth_handshake] test but with encryped communications
 //!
-//! Encryption certificates used are the same as [rustls]'s examples: <https://github.com/rustls/rustls>
+//! Encryption certificates used are the same as [tokio_rustls::rustls]'s examples: <https://github.com/rustls/rustls>
 
 use std::convert::TryFrom;
 use std::fs::File;
@@ -14,11 +14,18 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use clap::Args;
-use ractor::concurrency::{sleep, Duration, Instant};
-use ractor::{Actor, ActorProcessingErr};
+use ractor::concurrency::sleep;
+use ractor::concurrency::Duration;
+use ractor::concurrency::Instant;
+use ractor::Actor;
+use ractor::ActorProcessingErr;
 use tokio_rustls::rustls::pki_types::pem::PemObject;
-use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer, ServerName, TrustAnchor};
-use tokio_rustls::{TlsAcceptor, TlsConnector};
+use tokio_rustls::rustls::pki_types::CertificateDer;
+use tokio_rustls::rustls::pki_types::PrivateKeyDer;
+use tokio_rustls::rustls::pki_types::ServerName;
+use tokio_rustls::rustls::pki_types::TrustAnchor;
+use tokio_rustls::TlsAcceptor;
+use tokio_rustls::TlsConnector;
 
 const AUTH_TIME_ALLOWANCE_MS: u128 = 1500;
 
@@ -66,13 +73,7 @@ pub async fn test(config: EncryptionConfig) -> i32 {
 
     let ca_path = PathBuf::from("test-ca/rsa-2048/ca.cert");
     let mut ca_pem = BufReader::new(File::open(ca_path).expect("Failed to load CA certificate"));
-    let ca_certs = rustls_pemfile::certs(&mut ca_pem).filter_map(|cert| {
-        if let Ok(c) = cert {
-            Some(c)
-        } else {
-            None
-        }
-    });
+    let ca_certs = rustls_pemfile::certs(&mut ca_pem).filter_map(|cert| cert.ok());
 
     let mut root_cert_store = tokio_rustls::rustls::RootCertStore::empty();
     let trust_anchors = ca_certs.map(|cert| {

@@ -5,7 +5,7 @@
 
 // TODO #124 (slawlor): Redesign this without usage of core time primatives (i.e.
 // use concurrency instants)
-#[cfg(not(target_arch = "wasm32"))]
+
 use std::future::Future;
 
 use crate::concurrency::sleep;
@@ -26,7 +26,7 @@ where
     }
 
     let backtrace = backtrace::Backtrace::new();
-    assert!(check(), "Periodic check failed.\n{:?}", backtrace);
+    assert!(check(), "Periodic check failed.\n{backtrace:?}");
 }
 
 /// Periodic check of Future for condition
@@ -44,9 +44,5 @@ where
     }
 
     let backtrace = backtrace::Backtrace::new();
-    assert!(
-        check().await,
-        "Async periodic check failed.\n{:?}",
-        backtrace
-    );
+    assert!(check().await, "Async periodic check failed.\n{backtrace:?}");
 }

@@ -7,8 +7,12 @@
 //! to its accepted type using [From]. It represents a subset of the messages supported
 //! by the original actor.
 
-use crate::{ActorCell, ActorRef, Message, MessagingErr};
 use std::sync::Arc;
+
+use crate::ActorCell;
+use crate::ActorRef;
+use crate::Message;
+use crate::MessagingErr;
 
 /// [DerivedActorRef] wraps an [ActorCell] to send messages that can be converted
 /// into its accepted type using [From]. [DerivedActorRef] allows to create isolation
@@ -208,7 +212,11 @@ impl<TMessage: Message> ActorRef<TMessage> {
             actor_ref.send_message(msg.into()).map_err(|err| match err {
                 MessagingErr::SendErr(returned) => {
                     let Ok(err) = TFrom::try_from(returned) else {
-                        panic!("Failed to deconvert message to from type");
+                        panic!(
+                            "Failed to deconvert message from {} to {} when sending to: {actor_ref:?}",
+                            std::any::type_name::<TMessage>(),
+                            std::any::type_name::<TFrom>()
+                        );
                     };
                     MessagingErr::SendErr(err)
                 }

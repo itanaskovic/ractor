@@ -61,7 +61,6 @@ use tracing::Instrument;
 
 use crate::concurrency::JoinHandle;
 use crate::ActorId;
-
 pub mod messages;
 use messages::*;
 
@@ -73,12 +72,22 @@ pub mod derived_actor;
 mod supervision;
 
 #[cfg(test)]
+mod supervision_tests;
+#[cfg(test)]
 mod tests;
 
-use crate::errors::{ActorErr, ActorProcessingErr, MessagingErr, SpawnErr};
-use crate::{ActorName, Message, State};
-use actor_cell::{ActorCell, ActorPortSet, ActorStatus};
+use actor_cell::ActorCell;
+use actor_cell::ActorPortSet;
+use actor_cell::ActorStatus;
 use actor_ref::ActorRef;
+
+use crate::errors::ActorErr;
+use crate::errors::ActorProcessingErr;
+use crate::errors::MessagingErr;
+use crate::errors::SpawnErr;
+use crate::ActorName;
+use crate::Message;
+use crate::State;
 
 pub(crate) fn get_panic_string(e: Box<dyn std::any::Any + Send>) -> ActorProcessingErr {
     match e.downcast::<String>() {
@@ -181,6 +190,7 @@ pub trait Actor: Sized + Sync + Send + 'static {
     ) -> impl Future<Output = Result<(), ActorProcessingErr>> + Send {
         async { Ok(()) }
     }
+
     /// Invoked after an actor has started.
     ///
     /// Any post initialization can be performed here, such as writing
@@ -433,10 +443,10 @@ pub trait Actor: Sized + Sync + Send + 'static {
 
 /// Helper struct for tracking the results from actor processing loops
 #[doc(hidden)]
-struct ActorLoopResult {
-    should_exit: bool,
-    exit_reason: Option<String>,
-    was_killed: bool,
+pub(crate) struct ActorLoopResult {
+    pub(crate) should_exit: bool,
+    pub(crate) exit_reason: Option<String>,
+    pub(crate) was_killed: bool,
 }
 
 impl ActorLoopResult {

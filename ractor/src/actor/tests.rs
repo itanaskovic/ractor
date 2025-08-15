@@ -5,30 +5,35 @@
 
 //! General tests, more logic-specific tests are contained in sub-modules
 
-use std::sync::{
-    atomic::{AtomicU32, AtomicU8, Ordering},
-    Arc,
-};
+use std::sync::atomic::AtomicU32;
+use std::sync::atomic::AtomicU8;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
 
-use crate::{
-    actor::derived_actor::DerivedActorRef,
-    common_test::periodic_check,
-    concurrency::{sleep, Duration},
-    MessagingErr, RactorErr,
-};
-
-use crate::{
-    Actor, ActorCell, ActorProcessingErr, ActorRef, ActorStatus, SpawnErr, SupervisionEvent,
-};
-
-mod supervisor;
+use crate::actor::derived_actor::DerivedActorRef;
+use crate::common_test::periodic_check;
+use crate::concurrency::sleep;
+use crate::concurrency::Duration;
+use crate::Actor;
+use crate::ActorCell;
+use crate::ActorProcessingErr;
+use crate::ActorRef;
+use crate::ActorStatus;
+use crate::MessagingErr;
+use crate::RactorErr;
+use crate::SpawnErr;
+use crate::SupervisionEvent;
 
 struct EmptyMessage;
 #[cfg(feature = "cluster")]
 impl crate::Message for EmptyMessage {}
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
+#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
 async fn test_panic_on_start_captured() {
     #[derive(Default)]
     struct TestActor;
@@ -53,7 +58,10 @@ async fn test_panic_on_start_captured() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_error_on_start_captured() {
     struct TestActor;
 
@@ -77,7 +85,10 @@ async fn test_error_on_start_captured() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_stop_higher_priority_over_messages() {
     let message_counter = Arc::new(AtomicU8::new(0u8));
 
@@ -156,7 +167,10 @@ async fn test_stop_higher_priority_over_messages() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_kill_terminates_work() {
     struct TestActor;
 
@@ -202,7 +216,10 @@ async fn test_kill_terminates_work() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_stop_does_not_terminate_async_work() {
     struct TestActor;
 
@@ -257,7 +274,10 @@ async fn test_stop_does_not_terminate_async_work() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_kill_terminates_supervision_work() {
     struct TestActor;
 
@@ -305,7 +325,10 @@ async fn test_kill_terminates_supervision_work() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_sending_message_to_invalid_actor_type() {
     struct TestActor1;
     struct TestMessage1;
@@ -363,7 +386,10 @@ async fn test_sending_message_to_invalid_actor_type() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_sending_message_to_dead_actor() {
     #[derive(Default)]
     struct TestActor;
@@ -400,9 +426,13 @@ async fn test_sending_message_to_dead_actor() {
 
 #[cfg(feature = "cluster")]
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_serialized_cast() {
-    use crate::message::{BoxedDowncastErr, SerializedMessage};
+    use crate::message::BoxedDowncastErr;
+    use crate::message::SerializedMessage;
     use crate::Message;
 
     let counter = Arc::new(AtomicU8::new(0));
@@ -487,7 +517,7 @@ fn port_forward<Tin, Tout, F>(
 ) -> crate::RpcReplyPort<Tin>
 where
     Tin: Send + 'static,
-    Tout: Send + 'static,
+    Tout: crate::Message,
     F: Fn(Tin) -> Tout + Send + 'static,
 {
     let (tx, rx) = crate::concurrency::oneshot();
@@ -515,10 +545,15 @@ where
 
 #[cfg(feature = "cluster")]
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_serialized_rpc() {
-    use crate::message::{BoxedDowncastErr, SerializedMessage};
-    use crate::{Message, RpcReplyPort};
+    use crate::message::BoxedDowncastErr;
+    use crate::message::SerializedMessage;
+    use crate::Message;
+    use crate::RpcReplyPort;
 
     let counter = Arc::new(AtomicU8::new(0));
 
@@ -625,10 +660,16 @@ async fn test_serialized_rpc() {
 
 #[cfg(feature = "cluster")]
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_remote_actor() {
-    use crate::message::{BoxedDowncastErr, SerializedMessage};
-    use crate::{ActorId, ActorRuntime, Message};
+    use crate::message::BoxedDowncastErr;
+    use crate::message::SerializedMessage;
+    use crate::ActorId;
+    use crate::ActorRuntime;
+    use crate::Message;
 
     let counter = Arc::new(AtomicU8::new(0));
 
@@ -734,7 +775,10 @@ async fn test_remote_actor() {
 
 #[cfg(feature = "cluster")]
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn spawning_local_actor_as_remote_fails() {
     use crate::ActorProcessingErr;
 
@@ -791,7 +835,10 @@ async fn spawning_local_actor_as_remote_fails() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn instant_spawns() {
     let counter = Arc::new(AtomicU8::new(0));
 
@@ -852,7 +899,10 @@ async fn instant_spawns() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn stop_and_wait() {
     struct SlowActor;
     #[cfg_attr(feature = "async-trait", crate::async_trait)]
@@ -881,7 +931,10 @@ async fn stop_and_wait() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn kill_and_wait() {
     struct SlowActor;
     #[cfg_attr(feature = "async-trait", crate::async_trait)]
@@ -910,7 +963,10 @@ async fn kill_and_wait() {
 }
 
 #[test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 fn test_err_map() {
     let err: RactorErr<i32> = RactorErr::Messaging(MessagingErr::SendErr(123));
 
@@ -970,7 +1026,10 @@ fn returns_actor_references() {
 
 /// https://github.com/slawlor/ractor/issues/240
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn actor_failing_in_spawn_err_doesnt_poison_registries() {
     #[derive(Default)]
     struct Test;
@@ -1016,7 +1075,10 @@ async fn actor_failing_in_spawn_err_doesnt_poison_registries() {
 
 /// https://github.com/slawlor/ractor/issues/254
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn actor_post_stop_executed_before_stop_and_wait_returns() {
     struct TestActor {
         signal: Arc<AtomicU8>,
@@ -1069,7 +1131,10 @@ async fn actor_post_stop_executed_before_stop_and_wait_returns() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn actor_drain_messages() {
     struct TestActor {
         signal: Arc<AtomicU32>,
@@ -1132,7 +1197,10 @@ async fn actor_drain_messages() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn runtime_message_typing() {
     struct TestActor;
 
@@ -1165,7 +1233,10 @@ async fn runtime_message_typing() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn wait_for_death() {
     struct TestActor;
 
@@ -1206,7 +1277,10 @@ async fn wait_for_death() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn derived_actor_ref() {
     let result_counter = Arc::new(AtomicU32::new(0));
 
@@ -1271,6 +1345,18 @@ async fn derived_actor_ref() {
         .send_message(u16_message)
         .expect("Failed to send message to actor");
 
+    // timer
+    actor
+        .get_derived()
+        .send_after(Duration::from_millis(10), move || u16_message)
+        .await
+        .expect("Failed to await the join handle")
+        .expect("Failed to send message to actor");
+
+    sum += u16_message as u32;
+
+    // Make sure delayed send is received
+    crate::concurrency::sleep(Duration::from_millis(50)).await;
     actor
         .drain_and_wait(None)
         .await
@@ -1288,4 +1374,95 @@ async fn derived_actor_ref() {
     } else {
         panic!("Invalid error type");
     }
+}
+
+#[crate::concurrency::test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
+async fn can_use_call_in_actor() {
+    enum TestActorMessage {
+        Call(crate::RpcReplyPort<u32>),
+    }
+
+    #[cfg(feature = "cluster")]
+    impl crate::Message for TestActorMessage {}
+
+    struct TestActor1;
+
+    struct TestActor2;
+
+    #[cfg_attr(feature = "async-trait", crate::async_trait)]
+    impl Actor for TestActor1 {
+        type Msg = TestActorMessage;
+        type Arguments = ();
+        type State = ActorRef<TestActorMessage>;
+
+        async fn pre_start(
+            &self,
+            _this_actor: crate::ActorRef<Self::Msg>,
+            _: (),
+        ) -> Result<Self::State, ActorProcessingErr> {
+            let child_actor = Actor::spawn(None, TestActor2, ())
+                .await
+                .expect("Failed to spawn child actor");
+            Ok(child_actor.0)
+        }
+
+        async fn handle(
+            &self,
+            _myself: ActorRef<Self::Msg>,
+            message: Self::Msg,
+            state: &mut Self::State,
+        ) -> Result<(), ActorProcessingErr> {
+            match message {
+                TestActorMessage::Call(reply_port) => {
+                    let result = crate::call!(state, TestActorMessage::Call)?;
+                    reply_port.send(result).expect("Failed to send response");
+                }
+            }
+
+            Ok(())
+        }
+    }
+
+    #[cfg_attr(feature = "async-trait", crate::async_trait)]
+    impl Actor for TestActor2 {
+        type Msg = TestActorMessage;
+        type Arguments = ();
+        type State = ();
+
+        async fn pre_start(
+            &self,
+            _this_actor: crate::ActorRef<Self::Msg>,
+            _: (),
+        ) -> Result<Self::State, ActorProcessingErr> {
+            Ok(())
+        }
+
+        async fn handle(
+            &self,
+            _myself: ActorRef<Self::Msg>,
+            message: Self::Msg,
+            _state: &mut Self::State,
+        ) -> Result<(), ActorProcessingErr> {
+            match message {
+                TestActorMessage::Call(reply_port) => {
+                    reply_port.send(42).expect("Failed to send response");
+                }
+            }
+
+            Ok(())
+        }
+    }
+
+    // spawn the first actor, which will internally spawn the second actor
+    let (actor1, _) = Actor::spawn(None, TestActor1, ())
+        .await
+        .expect("Failed to spawn actor");
+
+    let result = crate::call!(actor1, TestActorMessage::Call).expect("Failed to call actor");
+
+    assert!(result == 42);
 }

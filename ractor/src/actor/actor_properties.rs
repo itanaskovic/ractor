@@ -3,20 +3,28 @@
 // This source code is licensed under both the MIT license found in the
 // LICENSE-MIT file in the root directory of this source tree.
 
-use std::sync::atomic::{AtomicU8, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::atomic::AtomicU8;
+use std::sync::atomic::Ordering;
+use std::sync::Mutex;
 
 use crate::actor::messages::StopMessage;
 use crate::actor::supervision::SupervisionTree;
-use crate::concurrency::{
-    MpscUnboundedReceiver as InputPortReceiver, MpscUnboundedSender as InputPort, OneshotReceiver,
-    OneshotSender as OneshotInputPort,
-};
+use crate::concurrency as mpsc;
+use crate::concurrency::MpscUnboundedReceiver as InputPortReceiver;
+use crate::concurrency::MpscUnboundedSender as InputPort;
+use crate::concurrency::OneshotReceiver;
+use crate::concurrency::OneshotSender as OneshotInputPort;
 use crate::message::BoxedMessage;
 #[cfg(feature = "cluster")]
 use crate::message::SerializedMessage;
-use crate::{concurrency as mpsc, Message};
-use crate::{Actor, ActorId, ActorName, ActorStatus, MessagingErr, Signal, SupervisionEvent};
+use crate::Actor;
+use crate::ActorId;
+use crate::ActorName;
+use crate::ActorStatus;
+use crate::Message;
+use crate::MessagingErr;
+use crate::Signal;
+use crate::SupervisionEvent;
 
 /// A muxed-message wrapper which allows the message port to receive either a message or a drain
 /// request which is a point-in-time marker that the actor's input channel should be drained
@@ -29,8 +37,8 @@ pub(crate) enum MuxedMessage {
 pub(crate) struct ActorProperties {
     pub(crate) id: ActorId,
     pub(crate) name: Option<ActorName>,
-    status: Arc<AtomicU8>,
-    wait_handler: Arc<mpsc::Notify>,
+    pub(crate) status: AtomicU8,
+    pub(crate) wait_handler: mpsc::Notify,
     pub(crate) signal: Mutex<Option<OneshotInputPort<Signal>>>,
     pub(crate) stop: Mutex<Option<OneshotInputPort<StopMessage>>>,
     pub(crate) supervision: InputPort<SupervisionEvent>,
@@ -78,9 +86,9 @@ impl ActorProperties {
             Self {
                 id,
                 name,
-                status: Arc::new(AtomicU8::new(ActorStatus::Unstarted as u8)),
+                status: AtomicU8::new(ActorStatus::Unstarted as u8),
                 signal: Mutex::new(Some(tx_signal)),
-                wait_handler: Arc::new(mpsc::Notify::new()),
+                wait_handler: mpsc::Notify::new(),
                 stop: Mutex::new(Some(tx_stop)),
                 supervision: tx_supervision,
                 message: tx_message,
@@ -186,18 +194,19 @@ impl ActorProperties {
     pub(crate) fn send_serialized(
         &self,
         message: SerializedMessage,
-    ) -> Result<(), MessagingErr<SerializedMessage>> {
+    ) -> Result<(), Box<MessagingErr<SerializedMessage>>> {
         let boxed = BoxedMessage {
             msg: None,
             serialized_msg: Some(message),
             span: None,
         };
-        self.message
+        Ok(self
+            .message
             .send(MuxedMessage::Message(boxed))
             .map_err(|e| match e.0 {
                 MuxedMessage::Message(m) => MessagingErr::SendErr(m.serialized_msg.unwrap()),
                 _ => panic!("Expected a boxed message but got a drain message"),
-            })
+            })?)
     }
 
     pub(crate) fn send_stop(

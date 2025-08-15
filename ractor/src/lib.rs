@@ -23,7 +23,9 @@
 //! An example "ping-pong" actor might be the following
 //!
 //! ```rust
-//! use ractor::{Actor, ActorProcessingErr, ActorRef};
+//! use ractor::Actor;
+//! use ractor::ActorProcessingErr;
+//! use ractor::ActorRef;
 //!
 //! /// [PingPong] is a basic actor that will print
 //! /// ping..pong.. repeatedly until some exit
@@ -156,7 +158,9 @@
     unreachable_pub,
     unused_imports,
     unused_variables,
-    unused_crate_dependencies
+    unused_crate_dependencies,
+    clippy::mod_module_files,
+    unsafe_code
 )]
 
 // ======================== Modules ======================== //
@@ -177,42 +181,50 @@ pub mod registry;
 pub mod rpc;
 #[cfg(feature = "cluster")]
 pub mod serialization;
+pub mod thread_local;
 pub mod time;
 
 use concurrency::JoinHandle;
 #[cfg(not(feature = "async-trait"))]
 use strum as _;
-
 // ======================== Test Modules and blind imports ======================== //
 
 #[cfg(test)]
 mod tests;
+// ======================== Re-exports ======================== //
+pub use actor::actor_cell::ActorCell;
+pub use actor::actor_cell::ActorStatus;
+pub use actor::actor_cell::ACTIVE_STATES;
+pub use actor::actor_id::ActorId;
+pub use actor::actor_ref::ActorRef;
+pub use actor::derived_actor::DerivedActorRef;
+pub use actor::messages::Signal;
+pub use actor::messages::SupervisionEvent;
+pub use actor::Actor;
+pub use actor::ActorRuntime;
+#[cfg(feature = "async-trait")]
+pub use async_trait::async_trait;
 #[cfg(test)]
 use criterion as _;
+pub use errors::ActorErr;
+pub use errors::ActorProcessingErr;
+pub use errors::MessagingErr;
+pub use errors::RactorErr;
+pub use errors::SpawnErr;
+pub use message::Message;
 #[cfg(test)]
 use paste as _;
+pub use port::OutputMessage;
+pub use port::OutputPort;
+pub use port::RpcReplyPort;
 #[cfg(test)]
 use rand as _;
+#[cfg(feature = "cluster")]
+pub use serialization::BytesConvertable;
 #[cfg(test)]
 use tracing_glog as _;
 #[cfg(test)]
 use tracing_subscriber as _;
-
-// ======================== Re-exports ======================== //
-
-pub use actor::actor_cell::{ActorCell, ActorStatus, ACTIVE_STATES};
-pub use actor::actor_id::ActorId;
-pub use actor::actor_ref::ActorRef;
-pub use actor::derived_actor::DerivedActorRef;
-pub use actor::messages::{Signal, SupervisionEvent};
-pub use actor::{Actor, ActorRuntime};
-#[cfg(feature = "async-trait")]
-pub use async_trait::async_trait;
-pub use errors::{ActorErr, ActorProcessingErr, MessagingErr, RactorErr, SpawnErr};
-pub use message::Message;
-pub use port::{OutputMessage, OutputPort, RpcReplyPort};
-#[cfg(feature = "cluster")]
-pub use serialization::BytesConvertable;
 
 // ======================== Type aliases and Trait definitions ======================== //
 
@@ -232,9 +244,8 @@ impl<T: std::any::Any + Send + 'static> State for T {}
 
 // ======================== Helper Functionality ======================== //
 
-/// Perform a background-spawn of an actor. This is a utility wrapper over [Actor::spawn] which drops
-/// the [crate::concurrency::JoinHandle] for convenience and assumes the actor implementation implements
-/// [Default].
+/// Perform a background-spawn of an actor. This is a utility wrapper over [Actor::spawn] which
+/// assumes the actor implementation implements [Default].
 ///
 /// * `args` - The arguments to start the actor
 ///
@@ -245,9 +256,22 @@ pub async fn spawn<T: Actor + Default>(
     T::spawn(None, T::default(), args).await
 }
 
+/// Perform a background-spawn of an thread-local actor. This is a utility wrapper over [thread_local::ThreadLocalActor::spawn]
+/// which assumes the actor implementation implements [Default].
+///
+/// * `args` - The arguments to start the actor
+/// * `spawner` - The thread-local spawner ([thread_local::ThreadLocalActorSpawner]) used to spawn thread-local actors
+///
+/// Returns [Ok((ActorRef, JoinHandle<()>))] upon successful actor startup, [Err(SpawnErr)] otherwise
+pub async fn spawn_local<T: thread_local::ThreadLocalActor>(
+    args: T::Arguments,
+    spawner: thread_local::ThreadLocalActorSpawner,
+) -> Result<(ActorRef<T::Msg>, JoinHandle<()>), SpawnErr> {
+    T::spawn(None, args, spawner).await
+}
+
 /// Perform a background-spawn of an actor with the provided name. This is a utility wrapper
-/// over [Actor::spawn] which drops the [crate::concurrency::JoinHandle] for convenience and
-/// assumes the actor implementation implements [Default].
+/// over [Actor::spawn] which assumes the actor implementation implements [Default].
 ///
 /// * `name` - The name for the actor to spawn
 /// * `args` - The arguments to start the actor

@@ -5,14 +5,15 @@
 
 //! Tests around dynamic setting changes in factories
 
-use std::sync::{
-    atomic::{AtomicU8, Ordering},
-    Arc,
-};
+use std::sync::atomic::AtomicU8;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
 
 use crate::concurrency::sleep;
 use crate::factory::*;
-use crate::{Actor, ActorProcessingErr, ActorRef};
+use crate::Actor;
+use crate::ActorProcessingErr;
+use crate::ActorRef;
 
 struct TestWorker;
 
@@ -55,7 +56,10 @@ impl WorkerBuilder<TestWorker, ()> for TestWorkerBuilder {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_dynamic_settings() {
     let counter_one = Arc::new(AtomicU8::new(0));
     let counter_two = Arc::new(AtomicU8::new(0));

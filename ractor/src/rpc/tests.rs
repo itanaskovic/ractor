@@ -5,18 +5,26 @@
 
 //! Tests for remote procedure calls
 
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::AtomicU8;
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
+use crate::call;
+use crate::call_t;
+use crate::cast;
 use crate::common_test::periodic_check;
 use crate::concurrency::Duration;
-
-use crate::{call, call_t};
-use crate::{cast, forward, Actor, ActorRef};
-use crate::{rpc, ActorProcessingErr};
+use crate::forward;
+use crate::rpc;
+use crate::Actor;
+use crate::ActorProcessingErr;
+use crate::ActorRef;
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_rpc_cast() {
     let counter = Arc::new(AtomicU8::new(0u8));
 
@@ -75,7 +83,10 @@ async fn test_rpc_cast() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_rpc_call() {
     struct TestActor;
     enum MessageFormat {
@@ -169,7 +180,10 @@ async fn test_rpc_call() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_rpc_call_forwarding() {
     struct Worker;
 
@@ -326,7 +340,10 @@ async fn test_rpc_call_forwarding() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_multi_call() {
     struct TestActor;
     enum MessageFormat {

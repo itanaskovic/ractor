@@ -58,12 +58,40 @@ pub fn broadcast<T: Clone>(buffer: usize) -> (BroadcastSender<T>, BroadcastRecei
     tokio::sync::broadcast::channel(buffer)
 }
 
-#[cfg(not(feature = "async-std"))]
+#[cfg(all(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    not(feature = "async-std")
+))]
 pub mod tokio_primitives;
-#[cfg(not(feature = "async-std"))]
+#[cfg(all(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    not(feature = "async-std")
+))]
 pub use self::tokio_primitives::*;
 
-#[cfg(feature = "async-std")]
+#[cfg(all(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    feature = "async-std"
+))]
 pub mod async_std_primitives;
-#[cfg(feature = "async-std")]
+#[cfg(all(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    feature = "async-std"
+))]
 pub use self::async_std_primitives::*;
+
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+pub mod wasm_browser_primitives;
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+pub use self::wasm_browser_primitives::*;
+
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+mod target_specific {
+    pub(crate) use web_time::SystemTime;
+}
+#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+mod target_specific {
+    pub(crate) use std::time::SystemTime;
+}
+
+pub(crate) use target_specific::SystemTime;

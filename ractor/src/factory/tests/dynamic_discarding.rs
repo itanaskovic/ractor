@@ -3,11 +3,14 @@
 // This source code is licensed under both the MIT license found in the
 // LICENSE-MIT file in the root directory of this source tree.
 
-#[cfg(not(feature = "async-trait"))]
-use futures::{future::BoxFuture, FutureExt};
 use std::sync::atomic::AtomicU16;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
+
+#[cfg(not(feature = "async-trait"))]
+use futures::future::BoxFuture;
+#[cfg(not(feature = "async-trait"))]
+use futures::FutureExt;
 
 use crate::concurrency::Duration;
 use crate::factory::*;
@@ -134,7 +137,10 @@ impl DynamicDiscardController for DiscardController {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_dynamic_dispatch_basic() {
     // let handle = tokio::runtime::Handle::current();
     // Setup

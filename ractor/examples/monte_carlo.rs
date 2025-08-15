@@ -19,8 +19,13 @@
 
 use std::collections::HashMap;
 
-use ractor::{cast, Actor, ActorId, ActorProcessingErr, ActorRef};
-use rand::{thread_rng, Rng};
+use ractor::cast;
+use ractor::Actor;
+use ractor::ActorId;
+use ractor::ActorProcessingErr;
+use ractor::ActorRef;
+use rand::thread_rng;
+use rand::Rng;
 
 // ================== Player Actor ================== //
 
@@ -208,6 +213,7 @@ fn init_logging() {
 
     use std::io::stderr;
     use std::io::IsTerminal;
+
     use tracing_glog::Glog;
     use tracing_glog::GlogFields;
     use tracing_subscriber::filter::EnvFilter;
@@ -230,7 +236,7 @@ fn init_logging() {
     tracing::subscriber::set_global_default(subscriber).expect("to set global subscriber");
 }
 
-#[tokio::main]
+#[ractor_example_entry_proc::ractor_example_entry]
 async fn main() {
     init_logging();
 

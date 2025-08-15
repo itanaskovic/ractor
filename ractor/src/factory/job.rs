@@ -6,20 +6,23 @@
 //! Specification for a [Job] sent to a factory
 
 use std::fmt::Debug;
+use std::hash::Hash;
 use std::panic::RefUnwindSafe;
 use std::sync::Arc;
-use std::{hash::Hash, time::SystemTime};
 
 use bon::Builder;
 use tracing::Span;
 
-use crate::{concurrency::Duration, Message};
-use crate::{ActorRef, RpcReplyPort};
-
-#[cfg(feature = "cluster")]
-use crate::{message::BoxedDowncastErr, BytesConvertable};
-
 use super::FactoryMessage;
+use crate::concurrency::Duration;
+use crate::concurrency::SystemTime;
+#[cfg(feature = "cluster")]
+use crate::message::BoxedDowncastErr;
+use crate::ActorRef;
+#[cfg(feature = "cluster")]
+use crate::BytesConvertable;
+use crate::Message;
+use crate::RpcReplyPort;
 
 /// Represents a key to a job. Needs to be hashable for routing properties. Additionally needs
 /// to be serializable for remote factories
@@ -536,9 +539,10 @@ where
         &self,
         job: Job<TKey, TMsg>,
         strategy: MessageRetryStrategy,
-    ) -> Result<(), crate::MessagingErr<FactoryMessage<TKey, RetriableMessage<TKey, TMsg>>>> {
+    ) -> Result<(), Box<crate::MessagingErr<FactoryMessage<TKey, RetriableMessage<TKey, TMsg>>>>>
+    {
         let job = RetriableMessage::from_job(job, strategy, self.clone());
-        self.cast(FactoryMessage::Dispatch(job))
+        Ok(self.cast(FactoryMessage::Dispatch(job))?)
     }
 }
 
@@ -619,10 +623,12 @@ impl<TKey: JobKey, TMessage: Message> RetriableMessage<TKey, TMessage> {
 mod tests {
     use super::super::FactoryMessage;
     use super::Job;
-    use crate::{
-        concurrency::Duration, factory::JobOptions, serialization::BytesConvertable, Message,
-    };
-    use crate::{message::SerializedMessage, RpcReplyPort};
+    use crate::concurrency::Duration;
+    use crate::factory::JobOptions;
+    use crate::message::SerializedMessage;
+    use crate::serialization::BytesConvertable;
+    use crate::Message;
+    use crate::RpcReplyPort;
 
     #[derive(Eq, Hash, PartialEq, Clone, Debug)]
     struct TestKey {
@@ -701,7 +707,10 @@ mod tests {
     type TheJob = Job<TestKey, TestMessage>;
 
     #[test]
-    #[tracing_test::traced_test]
+    #[cfg_attr(
+        not(all(target_arch = "wasm32", target_os = "unknown")),
+        tracing_test::traced_test
+    )]
     fn test_job_serialization() {
         // Check Cast variant
         let job_a = TheJob {
@@ -767,7 +776,10 @@ mod tests {
     }
 
     #[test]
-    #[tracing_test::traced_test]
+    #[cfg_attr(
+        not(all(target_arch = "wasm32", target_os = "unknown")),
+        tracing_test::traced_test
+    )]
     fn test_factory_message_serialization() {
         let job_a = TheJob {
             key: TestKey { item: 123 },

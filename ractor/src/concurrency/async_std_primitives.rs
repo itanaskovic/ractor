@@ -8,19 +8,19 @@
 //! We still rely on tokio for some core executor-independent parts
 //! such as channels (see: https://github.com/tokio-rs/tokio/issues/4232#issuecomment-968329443).
 
-use std::{
-    fmt::Debug,
-    future::Future,
-    pin::Pin,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
-    task::{Context, Poll},
-};
+use std::fmt::Debug;
+use std::future::Future;
+use std::pin::Pin;
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
+use std::task::Context;
+use std::task::Poll;
 
+use futures::future::BoxFuture;
 use futures::stream::FuturesUnordered;
-use futures::{future::BoxFuture, FutureExt, StreamExt};
+use futures::FutureExt;
+use futures::StreamExt;
 
 /// Represents a [JoinHandle] on a spawned task.
 /// Adds some syntactic wrapping to support a JoinHandle
@@ -173,6 +173,26 @@ where
     spawn_named(None, future)
 }
 
+/// Spawn a task on the executor runtime which will not be moved to other threads
+pub fn spawn_local<F>(future: F) -> JoinHandle<F::Output>
+where
+    F: Future + 'static,
+{
+    let signal = Arc::new(AtomicBool::new(false));
+    let inner_signal = signal.clone();
+
+    let jh = async_std::task::spawn_local(async move {
+        let r = future.await;
+        inner_signal.fetch_or(true, Ordering::Relaxed);
+        r
+    });
+
+    JoinHandle {
+        handle: Some(jh),
+        is_done: signal,
+    }
+}
+
 /// Spawn a (possibly) named task on the executor runtime
 pub fn spawn_named<F>(name: Option<&str>, future: F) -> JoinHandle<F::Output>
 where
@@ -230,7 +250,6 @@ where
 
 /// test macro
 pub use async_std::test;
-
 pub use futures::select_biased as select;
 
 #[cfg(test)]

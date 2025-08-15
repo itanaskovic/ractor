@@ -6,11 +6,15 @@
 //! Tests on the actor registry
 
 use crate::concurrency::Duration;
-
-use crate::{Actor, ActorProcessingErr, SpawnErr};
+use crate::Actor;
+use crate::ActorProcessingErr;
+use crate::SpawnErr;
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_basic_registation() {
     #[derive(Default)]
     struct EmptyActor;
@@ -46,7 +50,10 @@ async fn test_basic_registation() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_duplicate_registration() {
     struct EmptyActor;
 
@@ -94,7 +101,10 @@ async fn test_duplicate_registration() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_actor_registry_unenrollment() {
     struct EmptyActor;
 
@@ -140,10 +150,12 @@ mod pid_registry_tests {
     use dashmap::DashMap;
 
     use super::super::pid_registry::*;
-    use crate::{
-        common_test::periodic_check, concurrency::Duration, Actor, ActorId, ActorProcessingErr,
-        SupervisionEvent,
-    };
+    use crate::common_test::periodic_check;
+    use crate::concurrency::Duration;
+    use crate::Actor;
+    use crate::ActorId;
+    use crate::ActorProcessingErr;
+    use crate::SupervisionEvent;
 
     struct RemoteActor;
     struct RemoteActorMessage;
@@ -163,7 +175,10 @@ mod pid_registry_tests {
     }
 
     #[crate::concurrency::test]
-    #[tracing_test::traced_test]
+    #[cfg_attr(
+        not(all(target_arch = "wasm32", target_os = "unknown")),
+        tracing_test::traced_test
+    )]
     async fn try_enroll_remote_actor() {
         struct EmptyActor;
         #[cfg_attr(feature = "async-trait", crate::async_trait)]
@@ -209,7 +224,10 @@ mod pid_registry_tests {
     }
 
     #[crate::concurrency::test]
-    #[tracing_test::traced_test]
+    #[cfg_attr(
+        not(all(target_arch = "wasm32", target_os = "unknown")),
+        tracing_test::traced_test
+    )]
     async fn test_basic_registation() {
         struct EmptyActor;
 
@@ -243,7 +261,10 @@ mod pid_registry_tests {
     }
 
     #[crate::concurrency::test]
-    #[tracing_test::traced_test]
+    #[cfg_attr(
+        not(all(target_arch = "wasm32", target_os = "unknown")),
+        tracing_test::traced_test
+    )]
     async fn test_actor_registry_unenrollment() {
         struct EmptyActor;
 
@@ -285,7 +306,10 @@ mod pid_registry_tests {
     }
 
     #[crate::concurrency::test]
-    #[tracing_test::traced_test]
+    #[cfg_attr(
+        not(all(target_arch = "wasm32", target_os = "unknown")),
+        tracing_test::traced_test
+    )]
     async fn test_pid_lifecycle_monitoring() {
         let counter = Arc::new(DashMap::new());
 

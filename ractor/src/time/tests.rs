@@ -5,17 +5,21 @@
 
 //! Tests of timers
 
-use std::sync::{
-    atomic::{AtomicU8, Ordering},
-    Arc,
-};
+use std::sync::atomic::AtomicU8;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
 
-use crate::{common_test::periodic_check, concurrency::Duration, ActorProcessingErr};
-
-use crate::{Actor, ActorRef};
+use crate::common_test::periodic_check;
+use crate::concurrency::Duration;
+use crate::Actor;
+use crate::ActorProcessingErr;
+use crate::ActorRef;
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_intervals() {
     let counter = Arc::new(AtomicU8::new(0u8));
 
@@ -79,7 +83,10 @@ async fn test_intervals() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_send_after() {
     let counter = Arc::new(AtomicU8::new(0u8));
 
@@ -143,7 +150,10 @@ async fn test_send_after() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_exit_after() {
     struct TestActor;
 
@@ -175,7 +185,10 @@ async fn test_exit_after() {
 }
 
 #[crate::concurrency::test]
-#[tracing_test::traced_test]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    tracing_test::traced_test
+)]
 async fn test_kill_after() {
     struct TestActor;
 

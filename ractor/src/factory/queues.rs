@@ -360,10 +360,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::concurrency::Duration;
-
     use super::super::*;
     use super::*;
+    use crate::concurrency::Duration;
 
     #[derive(Default, Debug)]
     enum BasicPriority {
@@ -407,7 +406,10 @@ mod tests {
     }
 
     #[crate::concurrency::test]
-    #[tracing_test::traced_test]
+    #[cfg_attr(
+        not(all(target_arch = "wasm32", target_os = "unknown")),
+        tracing_test::traced_test
+    )]
     async fn test_basic_queueing() {
         let mut queue = DefaultQueue::<u64, ()>::default();
         for i in 0..99 {
@@ -459,7 +461,10 @@ mod tests {
     }
 
     #[crate::concurrency::test]
-    #[tracing_test::traced_test]
+    #[cfg_attr(
+        not(all(target_arch = "wasm32", target_os = "unknown")),
+        tracing_test::traced_test
+    )]
     async fn test_priority_queueing() {
         let mut queue = PriorityQueue::<u64, (), BasicPriority, BasicPriorityManager, 2>::new(
             BasicPriorityManager,

@@ -17,8 +17,12 @@ extern crate ractor;
 
 use std::sync::Arc;
 
-use ractor::{Actor, ActorProcessingErr, ActorRef, OutputPort};
-use tokio::time::{timeout, Duration};
+use ractor::Actor;
+use ractor::ActorProcessingErr;
+use ractor::ActorRef;
+use ractor::OutputPort;
+use tokio::time::timeout;
+use tokio::time::Duration;
 
 enum PublisherMessage {
     Publish(String),
@@ -107,6 +111,7 @@ fn init_logging() {
 
     use std::io::stderr;
     use std::io::IsTerminal;
+
     use tracing_glog::Glog;
     use tracing_glog::GlogFields;
     use tracing_subscriber::filter::EnvFilter;
@@ -129,7 +134,7 @@ fn init_logging() {
     tracing::subscriber::set_global_default(subscriber).expect("to set global subscriber");
 }
 
-#[tokio::main]
+#[ractor_example_entry_proc::ractor_example_entry]
 async fn main() {
     init_logging();
 
